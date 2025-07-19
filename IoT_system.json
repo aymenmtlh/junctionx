@@ -1,0 +1,554 @@
+[
+    {
+        "id": "c189116d346193ff",
+        "type": "tab",
+        "label": "IOT system",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "d849d9c2444afb0b",
+        "type": "inject",
+        "z": "c189116d346193ff",
+        "name": "Simulate Sensor Trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 390,
+        "y": 80,
+        "wires": [
+            [
+                "15a697a372d7513a"
+            ]
+        ]
+    },
+    {
+        "id": "15a697a372d7513a",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "DATA",
+        "func": "msg.payload = {\n    pond_id: 1,\n    ph: (6 + Math.random() * 3).toFixed(2),         // Range: 6.00 to 9.00\n    nitrite: (Math.random() * 0.5).toFixed(2),      // Range: 0.00 to 0.50\n    nitrate: (Math.random() * 80).toFixed(2),       // Range: 0.00 to 80.00\n    water_level: (1 + Math.random() * 4).toFixed(2),\n    ammonia : 0.4 ,\n    temperature : 27 , \n    dissolved_oxygen : 0.8 , \n    salinity : 0.2 , \n    \n    timestamp: new Date().toISOString()\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 650,
+        "y": 120,
+        "wires": [
+            [
+                "ea5c987574bf266f"
+            ]
+        ]
+    },
+    {
+        "id": "ea5c987574bf266f",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Check Thresholds",
+        "func": "const data = msg.payload;\nlet alerts = [];\n\nif (data.ph < 6.5 || data.ph > 8.5) {\n    alerts.push(`⚠️ pH level (${data.ph}) out of range in ${data.tankId}`);\n}\n\nif (data.nitrite > 0.25) {\n    alerts.push(`⚠️ Nitrite level (${data.nitrite}) too high in ${data.pond_id}`);\n}\n\nif (data.nitrate > 50) {\n    alerts.push(`⚠️ Nitrate level (${data.nitrate}) too high in ${data.pond_id}`);\n}\n\nif (data.waterLevel < 1.5 || data.waterLevel > 4.5) {\n    alerts.push(`⚠️ Water level (${data.waterLevel}m) abnormal in ${data.pond_id}`);\n}\n\n// Attach alerts to msg\nmsg.alerts = alerts;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 850,
+        "y": 180,
+        "wires": [
+            [
+                "d99757265e41d886"
+            ]
+        ]
+    },
+    {
+        "id": "d99757265e41d886",
+        "type": "switch",
+        "z": "c189116d346193ff",
+        "name": "Is There an Alert?",
+        "property": "alerts.length",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 1050,
+        "y": 120,
+        "wires": [
+            [
+                "d7118e213f7132e7"
+            ]
+        ]
+    },
+    {
+        "id": "d7118e213f7132e7",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Prepare Alert Message",
+        "func": "msg.payload = msg.alerts.join('\\n');  // Combine all alerts\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1380,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "0256bc93054a38e1",
+        "type": "exec",
+        "z": "c189116d346193ff",
+        "command": "python3/home/pi/sensor_reader.py",
+        "addpay": "",
+        "append": "",
+        "useSpawn": "false",
+        "timer": "",
+        "winHide": false,
+        "oldrc": false,
+        "name": "",
+        "x": 800,
+        "y": 260,
+        "wires": [
+            [
+                "6f2dedf3f1e1312e"
+            ],
+            [
+                "286711ba76d0f82e"
+            ],
+            [
+                "0354e9484ffb519f"
+            ]
+        ]
+    },
+    {
+        "id": "0354e9484ffb519f",
+        "type": "json",
+        "z": "c189116d346193ff",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 1210,
+        "y": 280,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "73d4bec97f8ec1bb",
+        "type": "inject",
+        "z": "c189116d346193ff",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 360,
+        "y": 180,
+        "wires": [
+            [
+                "0256bc93054a38e1"
+            ]
+        ]
+    },
+    {
+        "id": "286711ba76d0f82e",
+        "type": "debug",
+        "z": "c189116d346193ff",
+        "name": "output",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1210,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "6f2dedf3f1e1312e",
+        "type": "debug",
+        "z": "c189116d346193ff",
+        "name": "Status Info",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1230,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "733fe841eca5a38b",
+        "type": "inject",
+        "z": "c189116d346193ff",
+        "name": "Simulate Sensor Data",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "{\"pond_id\": 1, \"nitrite\": 0.4, \"nitrate\": 60.0, \"ammonia\": 0.03, \"ph\": 6.2, \"temperature\": 26.5, \"dissolved_oxygen\": 6.8, \"salinity\": 0.5, \"water_level\": 1.2}",
+        "payloadType": "json",
+        "x": 400,
+        "y": 300,
+        "wires": [
+            [
+                "6ae0ea36e6081b41"
+            ]
+        ]
+    },
+    {
+        "id": "6ae0ea36e6081b41",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Insert Measurements",
+        "func": "\nmsg.topic = \"INSERT INTO measurements (pond_id, timestamp, nitrite, nitrate, ammonia, ph, temperature, dissolved_oxygen, salinity, water_level) VALUES (?, NOW(), ?, ?, ?, ?, ?, ?, ?, ?)\";\nmsg.insertData = msg.payload;  // save original for alerts\nmsg.payload = [\n    msg.payload.pond_id,\n    msg.payload.nitrite,\n    msg.payload.nitrate,\n    msg.payload.ammonia,\n    msg.payload.ph,\n    msg.payload.temperature,\n    msg.payload.dissolved_oxygen,\n    msg.payload.salinity,\n    msg.payload.water_level\n];\nreturn msg;\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 700,
+        "y": 380,
+        "wires": [
+            [
+                "11e1c306cd97e21f",
+                "77238ebd08ead7b9"
+            ]
+        ]
+    },
+    {
+        "id": "77238ebd08ead7b9",
+        "type": "mysql",
+        "z": "c189116d346193ff",
+        "name": "Insert to MySQL (measurements)",
+        "x": 1260,
+        "y": 480,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "11e1c306cd97e21f",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Threshold Checker + Alert Builder",
+        "func": "\nconst data = msg.insertData;\nlet alerts = [];\n\nif (data.ph < 6.5 || data.ph > 8.5) {\n    alerts.push({ type: 'pH', value: data.ph, message: `⚠️ pH level (${data.ph}) out of range`, severity: 'medium' });\n}\nif (data.nitrite > 0.25) {\n    alerts.push({ type: 'Nitrite', value: data.nitrite, message: `⚠️ Nitrite level (${data.nitrite}) too high`, severity: 'high' });\n}\nif (data.nitrate > 50) {\n    alerts.push({ type: 'Nitrate', value: data.nitrate, message: `⚠️ Nitrate level (${data.nitrate}) too high`, severity: 'medium' });\n}\nif (data.water_level < 1.5 || data.water_level > 4.5) {\n    alerts.push({ type: 'Water Level', value: data.water_level, message: `⚠️ Water level (${data.water_level}m) abnormal`, severity: 'medium' });\n}\n\nlet messages = [];\nfor (let alert of alerts) {\n    messages.push({\n        topic: \"INSERT INTO alerts (pond_id, measurement_id, alert_type, message, severity, created_at) VALUES (?, LAST_INSERT_ID(), ?, ?, ?, NOW())\",\n        payload: [\n            data.pond_id,\n            alert.type,\n            alert.message,\n            alert.severity\n        ]\n    });\n}\n\nreturn [messages];\n",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 1160,
+        "y": 360,
+        "wires": [
+            [
+                "8594da69256d800d"
+            ]
+        ]
+    },
+    {
+        "id": "8594da69256d800d",
+        "type": "mysql",
+        "z": "c189116d346193ff",
+        "mydb": "",
+        "name": "Insert Alerts to MySQL",
+        "x": 1220,
+        "y": 440,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "e5648e131be177e4",
+        "type": "inject",
+        "z": "c189116d346193ff",
+        "name": "Simulate Sensor Trigger",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "1",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 390,
+        "y": 480,
+        "wires": [
+            [
+                "c6875867b561de9c"
+            ]
+        ]
+    },
+    {
+        "id": "c6875867b561de9c",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "DATA",
+        "func": "msg.payload = {\n    pond_id: 1,\n    ph: (6 + Math.random() * 3).toFixed(2),         // Range: 6.00 to 9.00\n    nitrite: (Math.random() * 0.5).toFixed(2),      // Range: 0.00 to 0.50\n    nitrate: (Math.random() * 80).toFixed(2),       // Range: 0.00 to 80.00\n    water_level: (1 + Math.random() * 4).toFixed(2),\n    ammonia : 0.4 ,\n    temperature : 27 , \n    dissolved_oxygen : 0.8 , \n    salinity : 0.2 , \n    \n    timestamp: new Date().toISOString()\n};\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 630,
+        "y": 480,
+        "wires": [
+            [
+                "fd19f7ed4801bf55"
+            ]
+        ]
+    },
+    {
+        "id": "fd19f7ed4801bf55",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Check Thresholds",
+        "func": "const data = msg.payload;\nlet alerts = [];\n\nif (data.ph < 6.5 || data.ph > 8.5) {\n    alerts.push(`⚠️ pH level (${data.ph}) out of range in ${data.tankId}`);\n}\n\nif (data.nitrite > 0.25) {\n    alerts.push(`⚠️ Nitrite level (${data.nitrite}) too high in ${data.pond_id}`);\n}\n\nif (data.nitrate > 50) {\n    alerts.push(`⚠️ Nitrate level (${data.nitrate}) too high in ${data.pond_id}`);\n}\n\nif (data.waterLevel < 1.5 || data.waterLevel > 4.5) {\n    alerts.push(`⚠️ Water level (${data.waterLevel}m) abnormal in ${data.pond_id}`);\n}\n\n// Attach alerts to msg\nmsg.alerts = alerts;\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 480,
+        "wires": [
+            [
+                "e27c30c752b45ae1"
+            ]
+        ]
+    },
+    {
+        "id": "e27c30c752b45ae1",
+        "type": "switch",
+        "z": "c189116d346193ff",
+        "name": "Is There an Alert?",
+        "property": "alerts.length",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "gt",
+                "v": "0",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 730,
+        "y": 580,
+        "wires": [
+            [
+                "778d19ac6afe34d3"
+            ]
+        ]
+    },
+    {
+        "id": "778d19ac6afe34d3",
+        "type": "function",
+        "z": "c189116d346193ff",
+        "name": "Prepare Alert Message",
+        "func": "msg.payload = msg.alerts.join('\\n');  // Combine all alerts\nreturn msg;\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 980,
+        "y": 580,
+        "wires": [
+            [
+                "09644de3fc242fda"
+            ]
+        ]
+    },
+    {
+        "id": "09644de3fc242fda",
+        "type": "template",
+        "z": "c189116d346193ff",
+        "name": "Build SMS JSON",
+        "field": "payload",
+        "fieldType": "msg",
+        "format": "json",
+        "syntax": "mustache",
+        "template": "{\n  \"to\": \"{{+213555204009}}\",\n  \"message\": \"{{There is an Alert check the platform}}\",\n  \"api_key\": \"api\"\n}",
+        "output": "json",
+        "x": 1130,
+        "y": 640,
+        "wires": [
+            [
+                "8434e4bc37ed7d62"
+            ]
+        ]
+    },
+    {
+        "id": "8434e4bc37ed7d62",
+        "type": "http request",
+        "z": "c189116d346193ff",
+        "name": "Send SMS via HTTP API",
+        "method": "POST",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "https://developer.ooredoo.com/casestudies/api-management",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [
+            {
+                "keyType": "other",
+                "keyValue": "",
+                "valueType": "other",
+                "valueValue": ""
+            }
+        ],
+        "x": 1310,
+        "y": 740,
+        "wires": [
+            [
+                "30fd5e7ea318e06b"
+            ]
+        ]
+    },
+    {
+        "id": "30fd5e7ea318e06b",
+        "type": "debug",
+        "z": "c189116d346193ff",
+        "name": "SMS API Response",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1580,
+        "y": 800,
+        "wires": []
+    },
+    {
+        "id": "28df38bf0a677d51",
+        "type": "mqtt in",
+        "z": "c189116d346193ff",
+        "name": "pH MQTT Input",
+        "topic": "pond1/ph",
+        "qos": "0",
+        "datatype": "auto",
+        "broker": "a13b7f0b8db81a19",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 320,
+        "y": 600,
+        "wires": [
+            [
+                "cd185136044a76ba",
+                "a82e882b7e17ee05"
+            ]
+        ]
+    },
+    {
+        "id": "cd185136044a76ba",
+        "type": "json",
+        "z": "c189116d346193ff",
+        "name": "Parse JSON",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 670,
+        "y": 660,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "a82e882b7e17ee05",
+        "type": "debug",
+        "z": "c189116d346193ff",
+        "name": "Raw MQTT Payload",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 980,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "a13b7f0b8db81a19",
+        "type": "mqtt-broker",
+        "name": "Local Mosquitto",
+        "broker": "192.168.1.100",
+        "port": "1883",
+        "clientid": "",
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": ""
+    }
+]
